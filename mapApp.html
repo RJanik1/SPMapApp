@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+
+
+    <div id="map"></div>
+
+    <!-- TODO: enter your google maps API key here -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=<YOUR KEY HERE>&callback=initMap"
+        async defer></script>
+
+    <script>
+        var map;
+
+        function initMap() {
+            //center the map on uptown Charlotte, NC
+            var Center = {
+                lat: 35.221814,
+                lng: -80.838929
+            }
+            //the map opject centered on Charlotte
+            map = new google.maps.Map(document.getElementById("map"), {
+                zoom: 10,
+                center: Center
+            });
+            locationRest();
+
+        }
+
+
+        function locationRest() {
+            var latitude;
+            var longitude;
+            var title;
+            var icon;
+            var MarkerIcon;
+            var MarkerDescription;
+            var infoContent;
+            var locationName;
+            /* Server relative URL*/
+            var serverRelativeUrl = _spPageContextInfo.webAbsoluteUrl;
+            /* Update This Variable if Library Name isn't "Locations" and after "Select="You will only have the Fields are being used*/
+            var restURL = serverRelativeUrl.concat("/_api/lists/getbytitle('Locations')/items?" +
+                "$select=File/ServerRelativeUrl,Title,MarkerIcon,latitude,longitude,MarkerDescription" +
+                "&$expand=File&");
+            $.ajax({
+                url: restURL,
+                type: "GET",
+                headers: {
+                    "accept": "application/json;odata=verbose",
+                },
+                success: function (data) {
+                    var locationData = data.d.results;
+
+                    //for each item in the list
+                    $.each(locationData, function (index, item) {
+
+                        /* Checking if Title Field is Populated */
+                        if ((item.Title != null)) {
+                            title = item.Title;
+                            console.log(title);
+
+                        }
+                        /* Checking if latitude Field is Populated */
+                        if (item.latitude !== null) {
+                            latitude = item.latitude;
+
+                        }
+                        /* Checking if longitude Field is Populated */
+                        if ((item.longitude != null)) {
+                            longitude = item.longitude;
+
+                        }
+
+                        /* Checking if MarkerIcon Field is Populated */
+                        if (item.MarkerIcon !== null) {
+                            icon = item.MarkerIcon;
+                            console.log(icon);
+
+                        }
+
+                        /* Checking if MarkerDescription Field is Populated */
+                        if (item.MarkerDescription !== null) {
+                            MarkerDescription = item.MarkerDescription;
+                            console.log('marker description is ' + MarkerDescription);
+
+                        }
+
+
+                        //convert the latitude string to a float. The SP columns were created as single line of text columns to prevent rounding or accidental math on the value
+                        latitude = parseFloat(latitude);
+
+                        //convert longitude string to a float
+                        longitude = parseFloat(longitude);
+
+                        var myLatLng = {
+                            lat: latitude,
+                            lng: longitude
+                        };
+
+
+                        addSPMarkers(title, myLatLng, icon, MarkerDescription);
+
+                    })
+
+                },
+                error: function (error) {
+                    console.log('Something went wrong');
+
+                }
+            })
+        }
+
+
+        function addSPMarkers(markerTitle, markerLatLng, MarkerIcon, MarkerDescription) {
+           //if there is no description make the description variable an empty string
+            if(MarkerDescription != null){
+            var description = MarkerDescription;
+            }else{
+                description = '';
+            }
+
+            //Switch statement to determine icon image
+            switch (MarkerIcon) {
+                case 'Red pin':
+                    MarkerIcon = 'http://maps.google.com/mapfiles/ms/icons/red-dot.png';
+                    break;
+                case 'Green pin':
+                    MarkerIcon = 'http://maps.google.com/mapfiles/ms/icons/green-dot.png';
+                    break;
+                case 'Blue pin':
+                    MarkerIcon = 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png';
+                    break;
+                case 'Yellow pin':
+                    MarkerIcon = 'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png';
+                    break;
+                case 'Logo':
+                    //Change this URL to the location of your custom marker
+                    MarkerIcon =
+                        '';
+                    break;
+                default:
+                    MarkerIcon = 'http://maps.google.com/mapfiles/ms/icons/red-dot.png';
+            }
+
+
+            locationName = markerTitle;
+
+            markerTitle = new google.maps.Marker({
+                position: markerLatLng,
+                map: map,
+                icon: MarkerIcon
+
+            });
+
+
+
+
+
+            var markerInfo = new google.maps.InfoWindow({ //the content of the marker description
+                content: '<h4> <strong>' + locationName + '</strong> </h4> <br> <p>' + description + '<p>',
+                maxWidth: 200
+            });
+
+
+            markerTitle.addListener('click', function () { //Opens the marker on click
+                markerInfo.open(map, markerTitle);
+
+            });
+
+        };
+
+    </script>
+
+
+
+    </body>
+
+<!-- styling the map -->
+    <style> 
+        #map {
+            height: 45vh;
+            width: 45vw;
+           
+        }
+    </style>
+
+
+
+</html>
